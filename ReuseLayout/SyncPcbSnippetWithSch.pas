@@ -90,7 +90,6 @@ begin
    end;
 end;
 
-
 function ListSelectedPcbComponents(PcbDocList : TStringList) : TStringList;
 var
   component                          : IPcb_component;
@@ -115,7 +114,6 @@ begin
       end;
   end;
 end;
-
 
 function ListSelectedSchComponents(SchDocList : TStringList) : TList;
 var
@@ -147,9 +145,14 @@ var
    i : integer;
 begin
      result := true;
+     if ((SchDesignatorsList.Count = 0) or (PcbDesignatorsStringList.Count = 0)) then
+     begin
+       result := false;
+     end
+       else
      if (SchDesignatorsList.Count <> PcbDesignatorsStringList.Count) then
      begin
-          result := false;
+       result := false;
      end
         else
      begin
@@ -163,7 +166,6 @@ begin
           end;
      end;
 end;
-
 
 function reannotatePcbComponents(PcbDocList : TStringList; SchDesignatorsList : TStringList; PcbDesignatorsList: TStringList) : boolean;
 var
@@ -196,7 +198,6 @@ begin
           PCBServer.SendMessageToRobots(component.I_ObjectAddress, c_Broadcast, PCBM_EndModify, c_NoEventData);
           component := componentiterator.NextPcbObject;
         end;
-        componentIterator.Free;
         PCBServer.PostProcess;
         Client.SendMessage('PCB:Zoom', 'Action=Redraw' , 255, Client.CurrentView);
       end;
@@ -208,9 +209,6 @@ var
    project : IProject;
    i       : integer;
    doc     : IDocument;
-
-   sheet   : ISch_scheet;
-   board   : IPcb_board;
 
    schDocList : TStringList;
    pcbDocList : TStringList;
@@ -250,4 +248,6 @@ begin
     end;
     schDocList.Free;
     pcbDocList.Free;
+    selectedSchComponentList.Free;
+    selectedPcbComponentList.Free;
 end;
