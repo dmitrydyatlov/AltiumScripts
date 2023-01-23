@@ -244,7 +244,7 @@ begin
     end
        else
     begin
-      ShowMessage('Please, select the same components on the SHC and the PCB before running this script.');
+      ShowMessage('Please, select the same components on the SCH and the PCB before running this script.');
     end;
     schDocList.Free;
     pcbDocList.Free;
