@@ -204,6 +204,67 @@ begin
   end;
 end;
 
+procedure deleteDuplicatesOfSelectedPcbComponents(PcbDocList : TStringList);
+ var
+   i                        : integer;
+   componentIdx             : integer;
+   board                    : IPcb_Board;
+   componentIterator        : IPcb_iterator;
+   component                : IPcb_component;
+   selectedPcbComponents    : TStringList;
+begin
+
+  selectedPcbComponents := TStringList.Create;
+
+  for i := 0 to PcbDocList.Count - 1 do
+  begin
+      board := PcbServer.LoadPCBBoardByPath(PcbDocList[i]);
+      if (board <> nil) then
+      begin
+        componentIterator := board.BoardIterator_Create;
+        componentIterator.AddFilter_ObjectSet(MkSet(eComponentObject));
+        component := componentIterator.FirstPCBObject;
+        while (component <> nil) do
+        begin
+          if (component.selected) then
+          begin
+            selectedPcbComponents.Add(component.name.text);
+          end;
+          component := componentiterator.NextPcbObject;
+        end;
+      end;
+  end;
+
+  for i := 0 to PcbDocList.Count - 1 do
+  begin
+      board := PcbServer.LoadPCBBoardByPath(PcbDocList[i]);
+      if (board <> nil) then
+      begin
+        componentIterator := board.BoardIterator_Create;
+        componentIterator.AddFilter_ObjectSet(MkSet(eComponentObject));
+        PCBServer.PreProcess;
+        component := componentIterator.FirstPCBObject;
+        while (component <> nil) do
+        begin
+          if (not component.selected) then
+          begin
+            componentIdx := selectedPcbComponents.IndexOf(component.name.text);
+            if (componentIdx <> -1) then
+            begin
+              board.RemovePCBObject(component);
+            end;
+          end;
+          PCBServer.SendMessageToRobots(component.I_ObjectAddress, c_Broadcast, PCBM_EndModify, c_NoEventData);
+          component := componentiterator.NextPcbObject;
+        end;
+        PCBServer.PostProcess;
+        Client.SendMessage('PCB:Zoom', 'Action=Redraw' , 255, Client.CurrentView);
+      end;
+  end;
+
+  selectedPcbComponents.Free;
+end;
+
 procedure Run();
 var
    project : IProject;
@@ -226,8 +287,8 @@ begin
     for i := 0 to project.DM_LogicalDocumentCount - 1 do
     begin
       doc := project.DM_LogicalDocuments(i);
-      if doc.DM_DocumentKind ='SCH' then schDocList.Add(doc.DM_FullPath);
-      if doc.DM_DocumentKind ='PCB' then pcbDocList.Add(doc.DM_FullPath);
+      if doc.DM_DocumentKind = 'SCH' then schDocList.Add(doc.DM_FullPath);
+      if doc.DM_DocumentKind = 'PCB' then pcbDocList.Add(doc.DM_FullPath);
     end;
 
     // List all selected SCH and PCB components
@@ -241,6 +302,7 @@ begin
     if (checkListsCorrespondence(selectedSchComponentList, selectedPcbComponentList)) then  // Check if selected PCB components correspond to their SCH instances
     begin
       reannotatePcbComponents(pcbDocList, selectedSchComponentList, selectedPcbComponentList); // Copy designators from SCH components to corresponding PCB components
+      deleteDuplicatesOfSelectedPcbComponents(pcbDocList);
     end
        else
     begin
